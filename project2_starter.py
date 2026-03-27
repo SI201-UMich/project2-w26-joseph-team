@@ -37,14 +37,7 @@ def load_listing_results(html_path) -> list[tuple]:
     Returns:
         list[tuple]: A list of tuples containing (listing_title, listing_id)
     """
-    # TODO: Implement checkout logic following the instructions
-    # ==============================
-    # YOUR CODE STARTS HERE
-    # ==============================
-    pass
-    # ==============================
-    # YOUR CODE ENDS HERE
-    # ==============================
+    
     with open(html_path, "r", encoding="utf-8-sig") as f:
         soup = BeautifulSoup(f, "html.parser")
     results = []
@@ -150,15 +143,22 @@ def create_listing_database(html_path) -> list[tuple]:
         list[tuple]: A list of tuples. Each tuple contains:
         (listing_title, listing_id, policy_number, host_type, host_name, room_type, location_rating)
     """
-    # TODO: Implement checkout logic following the instructions
-    # ==============================
-    # YOUR CODE STARTS HERE
-    # ==============================
-    pass
-    # ==============================
-    # YOUR CODE ENDS HERE
-    # ==============================
-
+    
+    listings = load_listing_results(html_path)
+    database = []
+    for title, listing_id in listings:
+        details = get_listing_details(listing_id)
+        d = details[listing_id]
+        database.append((
+            title,
+            listing_id,
+            d["policy_number"],
+            d["host_type"],
+            d["host_name"],
+            d["room_type"],
+            d["location_rating"]
+        ))
+    return database
 
 def output_csv(data, filename) -> None:
     """
