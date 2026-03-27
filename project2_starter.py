@@ -173,14 +173,15 @@ def output_csv(data, filename) -> None:
     Returns:
         None
     """
-    # TODO: Implement checkout logic following the instructions
-    # ==============================
-    # YOUR CODE STARTS HERE
-    # ==============================
-    pass
-    # ==============================
-    # YOUR CODE ENDS HERE
-    # ==============================
+    sorted_data = sorted(data, key=lambda x: x[6], reverse=True)
+    with open(filename, "w", newline="", encoding="utf-8-sig") as f:
+        writer = csv.writer(f)
+        writer.writerow([
+            "Listing Title", "Listing ID", "Policy Number",
+            "Host Type", "Host Name", "Room Type", "Location Rating"
+        ])
+        writer.writerows(sorted_data)
+
 
 
 def avg_location_rating_by_room_type(data) -> dict:
@@ -196,14 +197,21 @@ def avg_location_rating_by_room_type(data) -> dict:
     Returns:
         dict: {room_type: average_location_rating}
     """
-    # TODO: Implement checkout logic following the instructions
-    # ==============================
-    # YOUR CODE STARTS HERE
-    # ==============================
-    pass
-    # ==============================
-    # YOUR CODE ENDS HERE
-    # ==============================
+    totals = {}
+    counts = {}
+    for row in data:
+        room_type = row[5]
+        rating = row[6]
+        if rating == 0.0:
+            continue
+        totals[room_type] = totals.get(room_type, 0) + rating
+        counts[room_type] = counts.get(room_type, 0) + 1
+
+    result = {}
+    for rt in totals:
+        avg = totals[rt] / counts[rt]
+        result[rt] = round(avg, 2)
+    return result
 
 
 def validate_policy_numbers(data) -> list[str]:
@@ -217,14 +225,7 @@ def validate_policy_numbers(data) -> list[str]:
     Returns:
         list[str]: A list of listing_id values whose policy numbers do NOT match the valid format
     """
-    # TODO: Implement checkout logic following the instructions
-    # ==============================
-    # YOUR CODE STARTS HERE
-    # ==============================
-    pass
-    # ==============================
-    # YOUR CODE ENDS HERE
-    # ==============================
+    
 
 
 # EXTRA CREDIT
