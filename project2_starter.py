@@ -95,14 +95,48 @@ def get_listing_details(listing_id) -> dict:
             }
         }
     """
-    # TODO: Implement checkout logic following the instructions
-    # ==============================
-    # YOUR CODE STARTS HERE
-    # ==============================
-    pass
-    # ==============================
-    # YOUR CODE ENDS HERE
-    # ==============================
+    path = os.path.join("html_files", f"listing_{listing_id}.html")
+    with open(path, "r", encoding="utf-8-sig") as f:
+        soup = BeautifulSoup(f, "html.parser")
+
+    # 1. Policy Number
+    policy = "Exempt"
+    policy_section = soup.find(string=re.compile(r"Policy number", re.I))
+    if policy_section:
+        parent = policy_section.find_parent("li")
+        raw_val = parent.get_text().split(":")[-1].strip() if parent else ""
+        if "pending" in raw_val.lower(): policy = "Pending"
+        elif "exempt" in raw_val.lower(): policy = "Exempt"
+        else: policy = raw_val
+
+    # 2. Host Type
+    host_type = "Superhost" if soup.find(string=re.compile(r"Superhost", re.I)) else "regular"
+
+    # 3. Host Name
+    host_name = ""
+    host_tag = soup.find("h2", string=re.compile(r"hosted by", re.I))
+    if host_tag:
+        host_name = re.sub(r".*hosted by\s+", "", host_tag.get_text(), flags=re.I).strip()
+
+    # 4. Room Type (Based on subtitle logic)
+    room_type = "Entire Room"
+    subtitle = soup.find("h2")
+    if subtitle:
+        text = subtitle.get_text()
+        if "Private" in text: room_type = "Private Room"
+        elif "Shared" in text: room_type = "Shared Room"
+
+    # 5. Location Rating
+    location_rating = 0.0
+    loc_tag = soup.find("div", string="Location")
+    if loc_tag:
+        rating_span = loc_tag.find_next("span", class_=re.compile(r".*"))
+        if rating_span:
+            location_rating = float(rating_span.get_text())
+
+    return {listing_id: {"policy_number": policy, "host_type": host_type, 
+                         "host_name": host_name, "room_type": room_type, 
+                         "location_rating": location_rating}}
 
 
 def create_listing_database(html_path) -> list[tuple]:
