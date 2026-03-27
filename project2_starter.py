@@ -43,8 +43,7 @@ def load_listing_results(html_path) -> list[tuple]:
     results = []
     seen_ids = set()
  
-    # Each listing card has a div with data-testid="listing-card-title"
-    # and a nearby <a> with href containing /rooms/<id>
+    
     for card in soup.find_all("div", attrs={"data-testid": "card-container"}):
         # Get the title
         title_tag = card.find("div", attrs={"data-testid": "listing-card-title"})
@@ -52,7 +51,7 @@ def load_listing_results(html_path) -> list[tuple]:
             continue
         title = title_tag.get_text(strip=True)
  
-        # Get the listing ID from the anchor href
+        
         link = card.find("a", href=re.compile(r"/rooms/"))
         if not link:
             continue
@@ -92,7 +91,7 @@ def get_listing_details(listing_id) -> dict:
     with open(path, "r", encoding="utf-8-sig") as f:
         soup = BeautifulSoup(f, "html.parser")
 
-    # 1. Policy Number
+    # 1. Policy
     policy = "Exempt"
     policy_section = soup.find(string=re.compile(r"Policy number", re.I))
     if policy_section:
@@ -111,7 +110,7 @@ def get_listing_details(listing_id) -> dict:
     if host_tag:
         host_name = re.sub(r".*hosted by\s+", "", host_tag.get_text(), flags=re.I).strip()
 
-    # 4. Room Type (Based on subtitle logic)
+    # 4. Room Type 
     room_type = "Entire Room"
     subtitle = soup.find("h2")
     if subtitle:
@@ -225,7 +224,16 @@ def validate_policy_numbers(data) -> list[str]:
     Returns:
         list[str]: A list of listing_id values whose policy numbers do NOT match the valid format
     """
-    
+    pattern = re.compile(r"^20\d{2}-00\d{4}STR$|^STR-000\d{4}$")
+    invalid = []
+    for row in data:
+        listing_id = row[1]
+        policy = row[2]
+        if policy in ("Pending", "Exempt"):
+            continue
+        if not pattern.match(policy):
+            invalid.append(listing_id)
+    return invalid
 
 
 # EXTRA CREDIT
@@ -238,15 +246,16 @@ def google_scholar_searcher(query):
     Returns:
         List of titles on the first page (list)
     """
-    # TODO: Implement checkout logic following the instructions
-    # ==============================
-    # YOUR CODE STARTS HERE
-    # ==============================
-    pass
-    # ==============================
-    # YOUR CODE ENDS HERE
-    # ==============================
-
+    url = f"https://scholar.google.com/scholar?q={query.replace(' ', '+')}"
+    headers = {"User-Agent": "Mozilla/5.0"}
+    response = requests.get(url, headers=headers)
+    soup = BeautifulSoup(response.text, "html.parser")
+    titles = []
+    for tag in soup.find_all("h3", class_="gs_rt"):
+        title_text = tag.get_text(strip=True)
+        title_text = re.sub(r"^\[.*?\]\s*", "", title_text)
+        titles.append(title_text)
+    return titles
 
 class TestCases(unittest.TestCase):
     def setUp(self):
