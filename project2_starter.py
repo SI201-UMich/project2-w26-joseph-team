@@ -1,8 +1,8 @@
 # SI 201 HW4 (Library Checkout System)
-# Your name:
-# Your student id:
-# Your email:
-# Who or what you worked with on this homework (including generative AI like ChatGPT):
+# Your name: Joseph
+# Your student id: 64220721
+# Your email: jjpeng@umich.edu
+# Who or what you worked with on this homework (including generative AI like ChatGPT): chatgpt
 # If you worked with generative AI also add a statement for how you used it.
 # e.g.:
 # Asked ChatGPT for hints on debugging and for suggestions on overall code structure
@@ -45,6 +45,35 @@ def load_listing_results(html_path) -> list[tuple]:
     # ==============================
     # YOUR CODE ENDS HERE
     # ==============================
+    with open(html_path, "r", encoding="utf-8-sig") as f:
+        soup = BeautifulSoup(f, "html.parser")
+    results = []
+    seen_ids = set()
+ 
+    # Each listing card has a div with data-testid="listing-card-title"
+    # and a nearby <a> with href containing /rooms/<id>
+    for card in soup.find_all("div", attrs={"data-testid": "card-container"}):
+        # Get the title
+        title_tag = card.find("div", attrs={"data-testid": "listing-card-title"})
+        if not title_tag:
+            continue
+        title = title_tag.get_text(strip=True)
+ 
+        # Get the listing ID from the anchor href
+        link = card.find("a", href=re.compile(r"/rooms/"))
+        if not link:
+            continue
+        href = link.get("href", "")
+        match = re.search(r"/rooms/(?:plus/)?(\d+)", href)
+        if not match:
+            continue
+        listing_id = match.group(1)
+ 
+        if listing_id not in seen_ids:
+            seen_ids.add(listing_id)
+            results.append((title, listing_id))
+ 
+    return results
 
 
 def get_listing_details(listing_id) -> dict:
