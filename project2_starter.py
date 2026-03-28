@@ -25,7 +25,8 @@ import requests  # kept for extra credit parity
 If you are getting "encoding errors" while trying to open, read, or write from a file, add the following argument to any of your open() functions:
     encoding="utf-8-sig"
 """
-
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+HTML_FOLDER = os.path.join(BASE_DIR, "html_files")
 
 def load_listing_results(html_path) -> list[tuple]:
     """
@@ -87,10 +88,11 @@ def get_listing_details(listing_id) -> dict:
             }
         }
     """
-    path = os.path.join("html_files", f"listing_{listing_id}.html")
+    path = os.path.join(HTML_FOLDER, f"listing_{listing_id}.html")
+    
+    
     with open(path, "r", encoding="utf-8-sig") as f:
         soup = BeautifulSoup(f, "html.parser")
-
     # 1. Policy
     policy = "Exempt"
     policy_section = soup.find(string=re.compile(r"Policy number", re.I))
@@ -120,15 +122,29 @@ def get_listing_details(listing_id) -> dict:
 
     # 5. Location Rating
     location_rating = 0.0
-    loc_tag = soup.find("div", string="Location")
-    if loc_tag:
-        rating_span = loc_tag.find_next("span", class_=re.compile(r".*"))
-        if rating_span:
-            location_rating = float(rating_span.get_text())
+    location_divs = soup.find_all("div", class_=lambda c: c and "_y1ba89" in c)
+    for div in location_divs:
+        if div.get_text(strip=True) == "Location":
+            # The rating number is in the next sibling div's span
+            parent = div.find_parent()
+            if parent:
+                rating_span = parent.find("span", class_=lambda c: c and "_4oybiu" in c)
+                if rating_span:
+                    try:
+                        location_rating = float(rating_span.get_text(strip=True))
+                    except ValueError:
+                        location_rating = 0.0
+            break
 
-    return {listing_id: {"policy_number": policy, "host_type": host_type, 
-                         "host_name": host_name, "room_type": room_type, 
-                         "location_rating": location_rating}}
+    return {
+        listing_id: {
+            "policy_number": policy,
+            "host_type": host_type,
+            "host_name": host_name,
+            "room_type": room_type,
+            "location_rating": location_rating
+        }
+    }
 
 
 def create_listing_database(html_path) -> list[tuple]:
@@ -172,8 +188,10 @@ def output_csv(data, filename) -> None:
     Returns:
         None
     """
+    csv_path = os.path.join(BASE_DIR, filename)
     sorted_data = sorted(data, key=lambda x: x[6], reverse=True)
-    with open(filename, "w", newline="", encoding="utf-8-sig") as f:
+    # Use csv_path instead of filename
+    with open(csv_path, "w", newline="", encoding="utf-8-sig") as f:
         writer = csv.writer(f)
         writer.writerow([
             "Listing Title", "Listing ID", "Policy Number",
@@ -209,7 +227,7 @@ def avg_location_rating_by_room_type(data) -> dict:
     result = {}
     for rt in totals:
         avg = totals[rt] / counts[rt]
-        result[rt] = round(avg, 2)
+        result[rt] = round(avg, 1)
     return result
 
 
@@ -338,8 +356,12 @@ class TestCases(unittest.TestCase):
 
 
 def main():
-    detailed_data = create_listing_database(os.path.join("html_files", "search_results.html"))
-    output_csv(detailed_data, "airbnb_dataset.csv")
+    search_path = os.path.join(HTML_FOLDER, "search_results.html")
+    if os.path.exists(search_path):
+        detailed_data = create_listing_database(search_path)
+        output_csv(detailed_data, "airbnb_dataset.csv")
+    else:
+        print(f"Error: Cannot find {search_path}")
 
 
 if __name__ == "__main__":
